@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orenzo ERP v5.0 - Product Sync</title>
+<title>Orenzo ERP v6.0 - Product Sync MERGE</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 body{background:#f6f6f6;color:#222;padding:15px}
 .card{background:white;border-radius:16px;padding:18px;margin-bottom:15px;box-shadow:0 2px 10px rgba(0,0,0,0.06)}
 h2{font-size:18px;margin-bottom:12px}
-h3{font-size:16px;margin-bottom:10px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .stat{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:12px;text-align:center}
 .stat b{font-size:22px;display:block}
@@ -20,21 +20,21 @@ h3{font-size:16px;margin-bottom:10px}
 input,select{padding:10px;border:1px solid #ddd;border-radius:8px;width:100%;margin:5px 0}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
-.shopee-box{background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:2px solid #16a34a;border-radius:16px;padding:18px}
+.shopee-box{background:linear-gradient(135deg,#FFF7ED,#DCFCE7);border:2px solid #16a34a;border-radius:16px;padding:18px}
 .badge{background:#16a34a;color:white;padding:3px 8px;border-radius:20px;font-size:11px}
-.badge-red{background:#EE4D2D}
-.badge-green{background:#16a34a}
 .badge-yellow{background:#eab308;color:black}
 .flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .alert{padding:12px;border-radius:10px;font-size:13px;margin:10px 0}
 .alert-green{background:#DCFCE7;border:1px solid #16a34a;color:#14532d}
 .alert-yellow{background:#FEF9C3;border:1px solid #eab308;color:#713f12}
+.upload-box{border:2px dashed #ccc;border-radius:12px;padding:15px;text-align:center;background:#fafafa;flex:1;min-width:250px}
+.upload-box.active{border-color:#16a34a;background:#F0FDF4}
 </style>
 </head>
 <body>
 
-<h1 style="margin:10px 0;">🧀 Orenzo ERP v5.0 <span class="badge">Product Sync - FIXED</span></h1>
-<div class="alert alert-green"><b>✅ BAGO:</b> Hindi na orders ang sine-sync. Products na mismo galing Shopee para mamonitor mo stock ng bawat keso (250g, 500g, etc).</div>
+<h1 style="margin:10px 0;">🧀 Orenzo ERP v6.0 <span class="badge">Product Sync v6 - MERGE 2 FILES</span></h1>
+<div class="alert alert-green"><b>✅ FIXED para sa Shopee bago:</b> Shopee naghihiwalay ng Basic Info (pangalan) at Sales Info (stock). I-merge natin dito para buo inventory mo.</div>
 
 <!-- DASHBOARD -->
 <div class="card">
@@ -44,344 +44,260 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
 <div class="stat" style="border-color:#16a34a"><b id="totalStock">0</b><small>Total Stock (pcs)</small></div>
 <div class="stat" style="background:#FEF3C7"><b id="lowStock">0</b><small>Low Stock ≤10</small></div>
 <div class="stat" style="background:#FEE2E2"><b id="outStock">0</b><small>Out of Stock</small></div>
-<div class="stat"><b id="todaySales">₱0</b><small>Today Sales</small></div>
 </div>
 </div>
 
-<!-- SHOPEE SYNC - PRODUCT VERSION -->
+<!-- SHOPEE SYNC - MERGE VERSION -->
 <div class="card shopee-box">
-<h2>🟢 Shopee Product Sync - No Partner ID Needed</h2>
-<p style="margin:8px 0;color:#555;font-size:14px;"><b>Tama na approach:</b> Yung listahan ng products at stock mo sa Shopee ang i-sync natin, hindi orders. Para kita mo agad kung paubos na si Orenzo Original 250g.</p>
+<h2>🟢 Shopee Product Sync - MERGE Basic + Sales Info</h2>
+<p style="margin:8px 0;color:#555;font-size:14px;">Sa screenshot mo nakita ko 74 records. Kailangan <b>2 files</b> para kumpleto:</p>
 
 <div class="flex">
-<div style="flex:1;min-width:280px;background:white;padding:14px;border-radius:10px;border:1px solid #ddd;">
-<b>Paano mag-export ng PRODUCTS:</b><br>
-<div style="font-size:13px;line-height:1.6;margin-top:8px;">
-1. Punta sa <b>seller.shopee.ph > My Products</b><br>
-2. Click <b>More Action > Download Product List</b> or <b>Mass Update > Export</b><br>
-3. Piliin <b>All Products / Active</b><br>
-4. Download CSV / Excel<br>
-5. Upload dito 👇
+<div class="upload-box" id="boxBasic">
+<b>File 1: Basic Info</b><br>
+<small style="color:#666">May Product Name, Parent SKU</small><br>
+<input type="file" id="fileBasic" accept=".xlsx,.xls,.csv" style="margin-top:10px;">
+<div id="basicStatus" style="font-size:12px;margin-top:6px;color:#666;">No file yet</div>
 </div>
-<input type="file" id="shopeeFile" accept=".csv,.xlsx,.xls" style="margin-top:12px;">
-<button class="btn btn-green" onclick="importShopeeProducts()" style="margin-top:8px;width:100%;">📦 Import / Sync Products</button>
-<div style="margin-top:8px;font-size:12px;color:#666;">Supported: Shopee Product List CSV</div>
+<div class="upload-box" id="boxSales">
+<b>File 2: Sales Info</b><br>
+<small style="color:#666">May Stock, Price, SKU - ITO ANG STOCK!</small><br>
+<input type="file" id="fileSales" accept=".xlsx,.xls,.csv" style="margin-top:10px;">
+<div id="salesStatus" style="font-size:12px;margin-top:6px;color:#666;">No file yet</div>
 </div>
-<div style="flex:1;min-width:250px;background:white;padding:12px;border-radius:10px;">
-<b>Shopee Shop:</b> <a href="https://shopee.ph/orenzo.cheese" target="_blank">orenza.cheese</a> <span class="badge badge-green">Product Sync</span>
-<div style="margin-top:12px;font-size:13px;line-height:1.8;">
-<div>Products Na-sync: <b id="importedCount">0</b></div>
-<div>Last Product Sync: <b id="lastSync">Never</b></div>
-<div>Total Stock sa Shopee: <b id="shopeeTotalStock">0</b></div>
-<button class="btn btn-outline" style="margin-top:10px;padding:6px 10px;font-size:12px;" onclick="window.open('https://seller.shopee.ph/portal/product/list','_blank')">Puntahan My Products</button>
+</div>
+
+<div style="margin-top:15px;display:flex;gap:10px;">
+<button class="btn btn-green" onclick="mergeAndSync()" style="flex:1;">🔄 Merge & Sync Products (Stock Monitor)</button>
+<button class="btn btn-outline" onclick="syncSingleFile()" style="flex:1;">📦 Sync Single File Lang (Kung isa lang)</button>
+</div>
+
+<div style="margin-top:10px;font-size:12px;color:#555;">
+<b>Tamang pag-download (base sa screenshot mo):</b><br>
+1. Template = <b>Basic Info</b> > Generate > Download<br>
+2. Template = <b>Sales Info</b> > Generate > Download<br>
+3. Upload both dito > Merge
+</div>
+
+<div style="margin-top:12px;background:white;padding:12px;border-radius:10px;display:flex;justify-content:space-between;font-size:13px;">
+<div>Products Na-sync: <b id="importedCount">0</b> | Last: <b id="lastSync">Never</b> | Total Stock: <b id="shopeeTotalStock">0</b></div>
+<div><button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="window.open('https://seller.shopee.ph/portal/product/mass-update','_blank')">Open Mass Update</button></div>
 </div>
 <div id="lowAlert" style="display:none;margin-top:10px;" class="alert alert-yellow"></div>
-</div>
-</div>
-
-<div id="shopeePreview" style="margin-top:15px;display:none;background:white;border-radius:10px;padding:12px;max-height:350px;overflow:auto;"></div>
+<div id="shopeePreview" style="margin-top:15px;display:none;background:white;border-radius:10px;padding:12px;max-height:400px;overflow:auto;"></div>
 </div>
 
-<!-- CART / POS -->
-<div class="card">
-<h2>🛒 Cart / Benta (Bawas sa Local Stock)</h2>
-<div class="flex">
-<select id="productSelect" style="flex:2;"></select>
-<input type="number" id="qtyInput" value="1" min="1" style="flex:1;">
-<button class="btn" onclick="addToCart()">Add</button>
-</div>
-<div id="cartList" style="margin-top:12px;"></div>
-<div style="margin-top:10px;font-weight:bold;">Total: <span id="cartTotal">₱0</span></div>
-<button class="btn btn-green" style="width:100%;margin-top:10px;" onclick="checkout()">Checkout & Bawas Stock</button>
-</div>
-
-<!-- PRODUCTS - MAIN MONITOR -->
+<!-- PRODUCTS -->
 <div class="card">
 <div class="flex" style="justify-content:space-between;">
-<h2>📦 Product Inventory Monitor</h2>
+<h2>📦 Product Inventory Monitor (Synced from Shopee)</h2>
 <div class="flex">
-<button class="btn btn-outline" style="padding:6px 12px;" onclick="addSampleProducts()">+ Load Sample Orenzo</button>
-<button class="btn btn-outline" style="padding:6px 12px;background:#FEF3C7;" onclick="clearProducts()">Clear All</button>
+<button class="btn btn-outline" style="padding:6px 12px;" onclick="clearProducts()">Clear</button>
 </div>
 </div>
 <div style="margin:10px 0;display:flex;gap:8px;">
 <input type="text" id="searchProd" placeholder="Search product..." oninput="render()" style="flex:1;">
-<select id="filterStock" onchange="render()" style="width:150px;"><option value="all">All Stock</option><option value="low">Low Stock Only</option><option value="out">Out Only</option><option value="in">In Stock Only</option></select>
+<select id="filterStock" onchange="render()" style="width:160px;"><option value="all">All Stock</option><option value="low">Low ≤10</option><option value="out">Out Only</option><option value="critical">Critical ≤3</option></select>
 </div>
 <table>
-<thead><tr><th>Product</th><th>Variation</th><th>SKU</th><th>Stock</th><th>Price</th><th>Expiry</th><th>Action</th></tr></thead>
+<thead><tr><th>Product</th><th>SKU / Variation</th><th>Stock (Shopee)</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
 <tbody id="productTable"></tbody>
 </table>
 </div>
 
-<!-- PUHUNAN & TUBO -->
-<div class="card">
-<h2>💰 Puhunan & Tubo</h2>
-<div class="grid">
-<div class="stat"><b id="invCost">₱0</b><small>Inventory Cost</small></div>
-<div class="stat"><b id="potentialSales">₱0</b><small>Potential Sales</small></div>
-<div class="stat"><b id="potentialProfit">₱0</b><small>Potential Profit</small></div>
-</div>
-<table style="margin-top:12px;">
-<thead><tr><th>Product</th><th>Cost</th><th>Price</th><th>Profit</th><th>Margin</th><th>Value (Stock*Cost)</th></tr></thead>
-<tbody id="profitTable"></tbody>
-</table>
-</div>
-
 <script>
-// DATA STORAGE
-let products = JSON.parse(localStorage.getItem('orenz_products_v5')|| localStorage.getItem('orenz_products') || '[]');
-let sales = JSON.parse(localStorage.getItem('orenz_sales')||'[]');
-let cart = [];
+let products = JSON.parse(localStorage.getItem('orenz_products_v6')||'[]');
+let sales = [];
+let basicData = null;
+let salesData = null;
 
-function save(){ 
-  localStorage.setItem('orenz_products_v5', JSON.stringify(products));
-  localStorage.setItem('orenz_sales', JSON.stringify(sales));
-  render();
-}
+function save(){ localStorage.setItem('orenz_products_v6', JSON.stringify(products)); render(); }
 
-function addSampleProducts(){
-  if(products.length>0 && !confirm("May products ka na. Add sample pa rin? Mag-merge lang, di ma-delete old.")) {}
-  const samples = [
-    {id:Date.now()+1,name:"Orenzo Cheese Original",variation:"250g",sku:"OREN-ORIG-250",stock:25,cost:120,price:195,expiry:"2026-09-20"},
-    {id:Date.now()+2,name:"Orenzo Cheese Original",variation:"500g",sku:"OREN-ORIG-500",stock:8,cost:220,price:350,expiry:"2026-09-20"},
-    {id:Date.now()+3,name:"Orenzo Queso de Bola",variation:"350g",sku:"OREN-BOLA-350",stock:50,cost:180,price:295,expiry:"2026-12-01"},
-    {id:Date.now()+4,name:"Orenzo Pimiento",variation:"250g",sku:"OREN-PIM-250",stock:3,cost:125,price:210,expiry:"2026-10-15"},
-    {id:Date.now()+5,name:"Jersey Full Cream Milk",variation:"1L",sku:"JERSEY-1L",stock:40,cost:85,price:110,expiry:"2026-12-01"},
-    {id:Date.now()+6,name:"Kewpie Roasted Sesame Dressing",variation:"210ml",sku:"KEWPIE-210",stock:0,cost:95,price:168,expiry:"2026-10-15"},
-  ];
-  // merge if sku exists, update stock else add
-  samples.forEach(s=>{
-    let exist = products.find(p=>p.sku===s.sku);
-    if(!exist) products.push(s);
-  });
-  save();
-}
 function clearProducts(){ if(confirm("Delete lahat?")){ products=[]; save(); } }
 
 function render(){
   let filter = document.getElementById('filterStock')?.value || 'all';
   let search = document.getElementById('searchProd')?.value.toLowerCase() || '';
-
-  // Filtered list for table
-  let displayProducts = products.filter(p=>{
-    let matchSearch = (p.name+' '+(p.variation||'')+' '+(p.sku||'')).toLowerCase().includes(search);
-    if(!matchSearch) return false;
+  let display = products.filter(p=>{
+    let txt = (p.name+' '+(p.variation||'')+' '+(p.sku||'')).toLowerCase();
+    if(search && !txt.includes(search)) return false;
     if(filter==='low' && p.stock>10) return false;
     if(filter==='out' && p.stock!==0) return false;
-    if(filter==='in' && p.stock<=10) return false;
+    if(filter==='critical' && p.stock>3) return false;
     return true;
   });
 
-  // Dashboard - based on ALL products, not filtered
   document.getElementById('totalProducts').textContent = products.length;
   document.getElementById('totalStock').textContent = products.reduce((a,b)=>a+b.stock,0);
   document.getElementById('lowStock').textContent = products.filter(p=>p.stock>0 && p.stock<=10).length;
   document.getElementById('outStock').textContent = products.filter(p=>p.stock===0).length;
-  
-  let today = new Date().toDateString();
-  let todaySalesArr = sales.filter(s=>new Date(s.date).toDateString()===today);
-  let todayTotal = todaySalesArr.reduce((a,b)=>a+b.total,0);
-  document.getElementById('todaySales').textContent = "₱"+todayTotal.toLocaleString();
 
-  // low alert
-  let lowItems = products.filter(p=>p.stock>0 && p.stock<=10);
-  let outItems = products.filter(p=>p.stock===0);
+  let low = products.filter(p=>p.stock>0 && p.stock<=10);
+  let out = products.filter(p=>p.stock===0);
+  let crit = products.filter(p=>p.stock>0 && p.stock<=3);
   let alertDiv = document.getElementById('lowAlert');
-  if(lowItems.length>0 || outItems.length>0){
+  if(low.length>0 || out.length>0){
     alertDiv.style.display='block';
-    alertDiv.innerHTML = (outItems.length>0?`🔴 <b>Out of Stock:</b> ${outItems.map(p=>p.name+' '+p.variation).join(', ')}<br>`:'') + (lowItems.length>0?`🟡 <b>Low Stock:</b> ${lowItems.map(p=>p.name+' '+p.variation+' ('+p.stock+')').join(', ')}`:'');
+    alertDiv.innerHTML = (out.length>0?`🔴 <b>Out (${out.length}):</b> ${out.slice(0,5).map(p=>p.name).join(', ')}${out.length>5?'...':''}<br>`:'') + (crit.length>0?`🚨 <b>Critical ≤3 (${crit.length}):</b> ${crit.map(p=>p.name+' ('+p.stock+')').join(', ')}<br>`:'') + (low.length>0?`🟡 <b>Low ≤10 (${low.length}):</b> ${low.slice(0,5).map(p=>p.name+' ('+p.stock+')').join(', ')}`:'');
   } else alertDiv.style.display='none';
 
-  // Product table
   let pt = document.getElementById('productTable'); pt.innerHTML='';
-  let ps = document.getElementById('productSelect'); ps.innerHTML='<option value="">Pili Product</option>';
-  let profitT = document.getElementById('profitTable'); profitT.innerHTML='';
-  let invCost=0,potSales=0;
-  displayProducts.forEach(p=>{
-    let stockColor = p.stock===0?'color:white;background:#EF4444;padding:3px 8px;border-radius:20px;': p.stock<=10?'color:black;background:#FDE68A;padding:3px 8px;border-radius:20px;font-weight:bold':'';
-    pt.innerHTML+=`<tr><td>${p.name}</td><td><span class="badge badge-green">${p.variation||'-'}</span></td><td style="font-size:12px;color:#666;">${p.sku||''}</td><td><span style="${stockColor}">${p.stock}</span></td><td>₱${p.price}</td><td>${p.expiry||'-'}</td><td><button onclick="delProduct(${p.id})" style="color:red;border:none;background:none;cursor:pointer;">Del</button> <button onclick="editStock(${p.id})" style="color:green;border:none;background:none;cursor:pointer;">Edit</button></td></tr>`;
-    invCost+= (p.cost||0)*p.stock; potSales+=p.price*p.stock;
+  display.forEach(p=>{
+    let status = p.stock===0?'<span style="background:#EF4444;color:white;padding:2px 8px;border-radius:12px;">OUT</span>': p.stock<=3?'<span style="background:#F97316;color:white;padding:2px 8px;border-radius:12px;">CRITICAL</span>': p.stock<=10?'<span style="background:#FDE68A;padding:2px 8px;border-radius:12px;">LOW</span>':'<span style="background:#DCFCE7;padding:2px 8px;border-radius:12px;">OK</span>';
+    let stockStyle = p.stock===0?'color:red;font-weight:bold': p.stock<=3?'color:#EA580C;font-weight:bold': p.stock<=10?'color:#D97706;font-weight:bold':'';
+    pt.innerHTML+=`<tr><td><b>${p.name}</b><br><small style="color:#666">${p.variation||''}</small></td><td style="font-size:12px">${p.sku||''}</td><td style="${stockStyle}">${p.stock}</td><td>₱${p.price}</td><td>${status}</td><td><button onclick="delProduct(${p.id})" style="color:red;border:none;background:none;cursor:pointer;">Del</button></td></tr>`;
   });
-  // product select should show all
-  products.forEach(p=>{
-    ps.innerHTML+=`<option value="${p.id}">${p.name} ${p.variation||''} - ${p.stock} pcs - ₱${p.price}</option>`;
-  });
-  
-  // profit table - all products
-  products.forEach(p=>{
-    let profit = (p.price||0) - (p.cost||0); 
-    let margin = p.cost?((profit/p.cost)*100).toFixed(1):0;
-    profitT.innerHTML+=`<tr><td>${p.name} ${p.variation||''}</td><td>₱${p.cost||0}</td><td>₱${p.price}</td><td>₱${profit}</td><td>${margin}%</td><td>₱${((p.cost||0)*p.stock).toLocaleString()}</td></tr>`;
-  });
-  
-  document.getElementById('invCost').textContent="₱"+invCost.toLocaleString();
-  document.getElementById('potentialSales').textContent="₱"+potSales.toLocaleString();
-  document.getElementById('potentialProfit').textContent="₱"+(potSales-invCost).toLocaleString();
+}
+function delProduct(id){ products = products.filter(p=>p.id!==id); save(); }
 
-  // cart
-  let cl = document.getElementById('cartList'); cl.innerHTML='';
-  let total=0;
-  cart.forEach((c,i)=>{
-    total+=c.price*c.qty;
-    cl.innerHTML+=`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #eee;"><span>${c.name} x ${c.qty}</span><span>₱${c.price*c.qty} <button onclick="cart.splice(${i},1);render()" style="color:red;border:none;background:none;">x</button></span></div>`;
-  });
-  document.getElementById('cartTotal').textContent="₱"+total;
-}
-
-function addToCart(){
-  let id = parseInt(document.getElementById('productSelect').value);
-  let qty = parseInt(document.getElementById('qtyInput').value)||1;
-  let p = products.find(x=>x.id===id);
-  if(!p) return alert("Pili ka muna product");
-  if(p.stock<qty) return alert("Kulang stock! Meron lang "+p.stock);
-  cart.push({id:p.id,name:p.name+' '+(p.variation||''),price:p.price,qty});
-  render();
-}
-function checkout(){
-  if(cart.length===0) return alert("Wala laman cart");
-  let total = cart.reduce((a,b)=>a+b.price*b.qty,0);
-  cart.forEach(c=>{
-    let p = products.find(x=>x.id===c.id);
-    if(p) p.stock -= c.qty;
-  });
-  sales.push({date:new Date().toISOString(),items:[...cart],total,source:"POS"});
-  cart=[];
-  save();
-  alert("Benta success! Total ₱"+total);
-}
-function delProduct(id){ if(!confirm("Delete?")) return; products = products.filter(p=>p.id!==id); save(); }
-function editStock(id){
-  let p = products.find(x=>x.id===id);
-  if(!p) return;
-  let newStock = prompt(`Edit stock for ${p.name} ${p.variation||''}. Current: ${p.stock}`, p.stock);
-  if(newStock===null) return;
-  p.stock = parseInt(newStock)||0;
-  save();
-}
-
-// ====== PRODUCT SYNC - CORE FIX ======
-function parseCSV(text){
-  // Handle quoted CSV properly
-  let lines = text.split(/\r?\n/).filter(l=>l.trim()!=="");
-  if(lines.length<2) return [];
-  let headers = splitCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
-  
-  let rows=[];
-  for(let i=1;i<lines.length;i++){
-    let cols = splitCSVLine(lines[i]);
-    let obj={};
-    headers.forEach((h,idx)=>{ obj[h]= (cols[idx]||'').trim(); });
-    obj._rawCols = cols;
-    rows.push(obj);
-  }
-  return {headers, rows};
-}
-function splitCSVLine(line){
-  // Simple CSV parser that handles quotes
-  let result=[], current='', inQuotes=false;
-  for(let i=0;i<line.length;i++){
-    let c=line[i];
-    if(c==='"'){ inQuotes=!inQuotes; }
-    else if(c===',' && !inQuotes){ result.push(current); current=''; }
-    else current+=c;
-  }
-  result.push(current);
-  return result.map(s=>s.replace(/^"|"$/g,'').trim());
-}
-
-function importShopeeProducts(){
-  const fileInput = document.getElementById('shopeeFile');
-  if(!fileInput.files[0]) return alert("Pili ka muna ng CSV galing Shopee > My Products > Download Product List");
-  const file = fileInput.files[0];
+// FILE PARSING
+function parseXLSX(file, callback){
   const reader = new FileReader();
   reader.onload = function(e){
-    const text = e.target.result;
-    let {headers, rows} = parseCSV(text);
-    console.log("Headers:", headers);
-    console.log("Sample row:", rows[0]);
-
-    if(rows.length===0) return alert("Walang laman file.");
-
-    // Detect Shopee product export columns (flexible)
-    // Common Shopee headers: Product Name, Parent SKU, Variation SKU, Variation Name, Price, Stock, Status
-    // Some exports: Product Name, Variation, SKU, Stock, etc.
-    let getField = (row, possibleNames) => {
-      for(let name of possibleNames){
-        let key = Object.keys(row).find(k=>k.toLowerCase().includes(name.toLowerCase()));
-        if(key && row[key]) return row[key];
-      }
-      return '';
-    };
-
-    let imported=0, added=0, updated=0;
-    let previewHTML = "<table><thead><tr><th>Product</th><th>Variation</th><th>SKU</th><th>Stock (Shopee)</th><th>Action</th></tr></thead><tbody>";
-    let totalStockShopee=0;
-
-    rows.forEach(r=>{
-      let prodName = getField(r, ['product name','item name','product']) || r._rawCols[0] || 'Unknown';
-      if(!prodName || prodName.toLowerCase().includes('product name')) return;
-      let variation = getField(r, ['variation name','variation','variant','option']) || '';
-      let sku = getField(r, ['variation sku','seller sku','sku','model sku']) || getField(r, ['parent sku']) || '';
-      let stockStr = getField(r, ['stock','quantity','available']) || '0';
-      let stock = parseInt(stockStr.replace(/[^0-9-]/g,''))||0;
-      let priceStr = getField(r, ['price','retail price','original price']) || '0';
-      let price = parseFloat(priceStr.replace(/[^0-9.]/g,''))||0;
-      totalStockShopee+=stock;
-
-      // Find existing by SKU or name+variation
-      let existing = null;
-      if(sku) existing = products.find(p=>p.sku && p.sku.toLowerCase()===sku.toLowerCase());
-      if(!existing) existing = products.find(p=>p.name.toLowerCase()===prodName.toLowerCase() && (p.variation||'').toLowerCase()===(variation||'').toLowerCase());
-      
-      if(existing){
-        existing.stock = stock; // SYNC stock from Shopee to local = monitor
-        if(price>0) existing.price = price;
-        if(sku) existing.sku = sku;
-        if(variation) existing.variation = variation;
-        updated++;
-        previewHTML+=`<tr><td>${prodName.substring(0,35)}</td><td>${variation}</td><td>${sku}</td><td><b>${stock}</b></td><td><span class="badge badge-yellow">Updated</span></td></tr>`;
-      } else {
-        // New product from Shopee
-        products.push({
-          id: Date.now()+Math.random(),
-          name: prodName,
-          variation: variation,
-          sku: sku,
-          stock: stock,
-          cost: price ? Math.round(price*0.7) : 0, // estimate cost 70% if unknown
-          price: price || 0,
-          expiry: ""
-        });
-        added++;
-        previewHTML+=`<tr><td>${prodName.substring(0,35)}</td><td>${variation}</td><td>${sku}</td><td><b>${stock}</b></td><td><span class="badge badge-green">New</span></td></tr>`;
-      }
-      imported++;
-    });
-    
-    previewHTML+="</tbody></table>";
-    
-    document.getElementById('shopeePreview').style.display='block';
-    document.getElementById('shopeePreview').innerHTML = `
-      <div class="alert alert-green">
-        <b>✅ ${imported} Products na-sync from Shopee!</b><br>
-        ${updated} updated, ${added} new products added. Total Shopee Stock: ${totalStockShopee}
-      </div>
-      ${previewHTML}
-      <p style="color:#16a34a;font-weight:bold;margin-top:10px;">✓ Stock mo ngayon naka-sync na sa Shopee! Monitor mo na kung low stock.</p>
-    `;
-    document.getElementById('importedCount').textContent = imported;
-    document.getElementById('lastSync').textContent = new Date().toLocaleString();
-    document.getElementById('shopeeTotalStock').textContent = totalStockShopee;
-
-    save();
+    const data = new Uint8Array(e.target.result);
+    const wb = XLSX.read(data, {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+    callback(rows);
+  };
+  reader.readAsArrayBuffer(file);
+}
+function parseCSVFile(file, callback){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    let text = e.target.result;
+    let lines = text.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2){ callback([]); return; }
+    let headers = lines[0].split(',').map(h=>h.replace(/"/g,'').trim());
+    let rows=[];
+    for(let i=1;i<lines.length;i++){
+      let cols = lines[i].split(',').map(c=>c.replace(/"/g,'').trim());
+      let obj={}; headers.forEach((h,idx)=>obj[h]=cols[idx]||''); rows.push(obj);
+    }
+    callback(rows);
   };
   reader.readAsText(file);
 }
+function loadFile(file, onDone){
+  if(!file) return;
+  if(file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) parseXLSX(file, onDone);
+  else parseCSVFile(file, onDone);
+}
 
-// Init
+document.getElementById('fileBasic').addEventListener('change', e=>{
+  let f=e.target.files[0]; if(!f) return;
+  document.getElementById('basicStatus').textContent='Reading...';
+  loadFile(f, rows=>{
+    basicData=rows;
+    document.getElementById('basicStatus').innerHTML=`<span style="color:green">✅ ${rows.length} products loaded</span>`;
+    document.getElementById('boxBasic').classList.add('active');
+  });
+});
+document.getElementById('fileSales').addEventListener('change', e=>{
+  let f=e.target.files[0]; if(!f) return;
+  document.getElementById('salesStatus').textContent='Reading...';
+  loadFile(f, rows=>{
+    salesData=rows;
+    document.getElementById('salesStatus').innerHTML=`<span style="color:green">✅ ${rows.length} stocks loaded</span>`;
+    document.getElementById('boxSales').classList.add('active');
+  });
+});
+
+function getField(row, names){
+  for(let n of names){
+    let k = Object.keys(row).find(key=>key.toLowerCase().includes(n.toLowerCase()));
+    if(k && row[k]!=='' && row[k]!==undefined) return String(row[k]).trim();
+  }
+  return '';
+}
+
+function mergeAndSync(){
+  if(!basicData && !salesData) return alert("Mag-upload ka muna ng Basic Info at Sales Info files galing sa screenshot mo");
+  if(!basicData) return alert("Kulang: Basic Info file para sa product names");
+  if(!salesData) return alert("Kulang: Sales Info file - ito may stock!");
+
+  // Build map from Basic Info: usually has Product ID, Parent SKU, Product Name
+  let productMap = {};
+  basicData.forEach(r=>{
+    let itemId = getField(r, ['product id','item id','product_id','item_id']) || getField(r, ['parent sku','parent_sku']) || getField(r, ['product name','product_name']);
+    let name = getField(r, ['product name','product_name','item name']);
+    let parentSku = getField(r, ['parent sku','parent_sku','model sku','sku']);
+    let variation = getField(r, ['variation','variant']);
+    if(itemId) productMap[itemId] = {name, parentSku, variation, raw:r};
+    // Also map by parent sku
+    if(parentSku) productMap[parentSku.toLowerCase()] = {name, parentSku, variation, raw:r};
+  });
+
+  // Now merge with Sales Info which has stock
+  let merged=[];
+  let totalStock=0;
+  salesData.forEach(r=>{
+    let sku = getField(r, ['variation sku','seller sku','sku','model sku']);
+    let parentSku = getField(r, ['parent sku','parent_sku']);
+    let stock = parseInt(getField(r, ['stock','quantity','seller stock','available stock']).replace(/[^0-9-]/g,''))||0;
+    let price = parseFloat(getField(r, ['price','selling price','original price']).replace(/[^0-9.]/g,''))||0;
+    let itemId = getField(r, ['product id','item id','product_id']);
+    let variation = getField(r, ['variation name','variation','option','tier variation']);
+
+    let basic = productMap[itemId] || productMap[sku?.toLowerCase()] || productMap[parentSku?.toLowerCase()] || {};
+    let prodName = basic.name || getField(r, ['product name','product_name']) || 'Unknown Product';
+
+    if(prodName.length<2) return;
+    totalStock+=stock;
+    merged.push({id: Date.now()+Math.random(), name: prodName, variation: variation || basic.variation || '', sku: sku || parentSku || '', stock, price, basicRaw: basic.raw});
+  });
+
+  // If Sales Info already has product names, use it directly
+  if(merged.length===0 && salesData.length>0){
+    salesData.forEach(r=>{
+      let name = getField(r, ['product name','product_name']) || 'Product';
+      let sku = getField(r, ['sku','variation sku']);
+      let stock = parseInt(getField(r, ['stock']).replace(/[^0-9-]/g,''))||0;
+      let price = parseFloat(getField(r, ['price']).replace(/[^0-9.]/g,''))||0;
+      let variation = getField(r, ['variation']);
+      if(name.length>1){ merged.push({id:Date.now()+Math.random(), name, variation, sku, stock, price}); totalStock+=stock; }
+    });
+  }
+
+  // Save merged to products
+  products = merged;
+  document.getElementById('importedCount').textContent = merged.length;
+  document.getElementById('shopeeTotalStock').textContent = totalStock;
+  document.getElementById('lastSync').textContent = new Date().toLocaleString();
+
+  let preview = `<div class="alert alert-green"><b>✅ ${merged.length} Products merged! Total Stock: ${totalStock}</b><br>Basic Info (${basicData.length}) + Sales Info (${salesData.length})</div><table><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Price</th></tr>`;
+  merged.slice(0,100).forEach(p=>{ preview+=`<tr><td>${p.name.substring(0,40)}</td><td style="font-size:11px">${p.sku}</td><td><b>${p.stock}</b></td><td>₱${p.price}</td></tr>`; });
+  preview+=`</table>${merged.length>100?`<small>Showing 100 of ${merged.length}</small>`:''}`;
+  document.getElementById('shopeePreview').style.display='block';
+  document.getElementById('shopeePreview').innerHTML=preview;
+  save();
+}
+
+function syncSingleFile(){
+  let data = salesData || basicData;
+  if(!data) return alert("Mag-upload ka muna ng file (Sales Info mas ok)");
+  let merged=[]; let totalStock=0;
+  data.forEach(r=>{
+    let name = getField(r, ['product name','product_name','item name']) || 'Product';
+    let sku = getField(r, ['sku','variation sku','parent sku']);
+    let stock = parseInt(getField(r, ['stock','seller stock','available']).replace(/[^0-9-]/g,''))||0;
+    let price = parseFloat(getField(r, ['price']).replace(/[^0-9.]/g,''))||0;
+    let variation = getField(r, ['variation name','variation','tier variation'])||'';
+    if(name.length>1 && name.toLowerCase()!=='product name'){ merged.push({id:Date.now()+Math.random(), name, variation, sku, stock, price}); totalStock+=stock; }
+  });
+  products=merged;
+  document.getElementById('importedCount').textContent=merged.length;
+  document.getElementById('shopeeTotalStock').textContent=totalStock;
+  document.getElementById('lastSync').textContent=new Date().toLocaleString();
+  let preview=`<div class="alert alert-green"><b>✅ ${merged.length} Products synced from single file! Stock: ${totalStock}</b></div><table><tr><th>Product</th><th>SKU</th><th>Stock</th><th>Price</th></tr>`;
+  merged.slice(0,100).forEach(p=>{ preview+=`<tr><td>${p.name.substring(0,40)}</td><td>${p.sku}</td><td>${p.stock}</td><td>₱${p.price}</td></tr>`; });
+  preview+=`</table>`;
+  document.getElementById('shopeePreview').style.display='block';
+  document.getElementById('shopeePreview').innerHTML=preview;
+  save();
+}
+
 render();
-if(products.length===0) addSampleProducts();
 </script>
 </body>
 </html>
