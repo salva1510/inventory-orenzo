@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orenzo ERP v4.3 - Shopee Sync</title>
+<link rel="icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+body{background:#f6f6f6;color:#222;padding:15px}
+.card{background:white;border-radius:16px;padding:18px;margin-bottom:15px;box-shadow:0 2px 10px rgba(0,0,0,0.06)}
+h2{font-size:18px;margin-bottom:12px}
+h3{font-size:16px;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:#fafafa;border:1px solid #eee;border-radius:12px;padding:12px;text-align:center}
+.stat b{font-size:22px;display:block}
+.stat small{color:#666}
+.btn{background:#EE4D2D;color:white;border:none;padding:12px 18px;border-radius:10px;cursor:pointer;font-weight:600}
+.btn-green{background:#16a34a}
+.btn-outline{background:white;color:#EE4D2D;border:2px solid #EE4D2D}
+input,select{padding:10px;border:1px solid #ddd;border-radius:8px;width:100%;margin:5px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
+.shopee-box{background:linear-gradient(135deg,#FFF7ED,#FFEDD5);border:2px dashed #EE4D2D;border-radius:16px;padding:18px}
+.badge{background:#EE4D2D;color:white;padding:3px 8px;border-radius:20px;font-size:11px}
+.flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+
+<h1 style="margin:10px 0;">🧀 Orenzo ERP v4.3 <span class="badge">Shopee Sync</span></h1>
+
+<!-- DASHBOARD -->
+<div class="card">
+<h2>📊 Dashboard</h2>
+<div class="grid">
+<div class="stat"><b id="totalProducts">0</b><small>Total Products</small></div>
+<div class="stat"><b id="lowStock">0</b><small>Low Stock</small></div>
+<div class="stat"><b id="expiringSoon">0</b><small>Expiring Soon</small></div>
+<div class="stat"><b id="todaySales">₱0</b><small>Today Sales</small></div>
+<div class="stat"><b id="todayOrders">0</b><small>Orders Today</small></div>
+</div>
+</div>
+
+<!-- SHOPEE SYNC - BAGO ITO -->
+<div class="card shopee-box">
+<h2>🛒 Shopee Connection - No Partner ID Needed</h2>
+<p style="margin:8px 0;color:#555;font-size:14px;">Hindi na kailangan ng Partner ID / Partner Key. Download mo lang orders galing Seller Centre tapos upload dito.</p>
+
+<div class="flex">
+<div style="flex:1;min-width:250px;background:white;padding:12px;border-radius:10px;">
+<b>Step 1:</b> Punta sa <b>seller.shopee.ph > My Orders > Mass Ship / To-Process</b><br>
+<b>Step 2:</b> Click <b>Export</b> > Download CSV<br>
+<b>Step 3:</b> Upload dito:
+<input type="file" id="shopeeFile" accept=".csv">
+<button class="btn" onclick="importShopeeCSV()" style="margin-top:8px;width:100%;">📥 Import Shopee Orders</button>
+</div>
+<div style="flex:1;min-width:250px;background:white;padding:12px;border-radius:10px;">
+<b>Shopee Shop:</b> <a href="https://shopee.ph/orenzo.cheese" target="_blank">orenza.cheese</a> <span class="badge">72 To-Process</span>
+<div style="margin-top:10px;font-size:13px;">
+<div>Orders Na-import: <b id="importedCount">0</b></div>
+<div>Last Sync: <b id="lastSync">Never</b></div>
+<button class="btn btn-outline" style="margin-top:8px;padding:6px 10px;font-size:12px;" onclick="window.open('https://seller.shopee.ph/portal/sale/order','_blank')">Puntahan Seller Centre</button>
+</div>
+</div>
+</div>
+
+<div id="shopeePreview" style="margin-top:15px;display:none;background:white;border-radius:10px;padding:10px;max-height:300px;overflow:auto;"></div>
+</div>
+
+<!-- CART / POS -->
+<div class="card">
+<h2>🛒 Cart / Benta</h2>
+<div class="flex">
+<select id="productSelect" style="flex:2;"></select>
+<input type="number" id="qtyInput" value="1" min="1" style="flex:1;">
+<button class="btn" onclick="addToCart()">Add</button>
+</div>
+<div id="cartList" style="margin-top:12px;"></div>
+<div style="margin-top:10px;font-weight:bold;">Total: <span id="cartTotal">₱0</span></div>
+<button class="btn btn-green" style="width:100%;margin-top:10px;" onclick="checkout()">Checkout & Bawas Stock</button>
+</div>
+
+<!-- PRODUCTS -->
+<div class="card">
+<div class="flex" style="justify-content:space-between;">
+<h2>📦 Products</h2>
+<button class="btn btn-outline" style="padding:6px 12px;" onclick="addSampleProducts()">+ Load Sample Products</button>
+</div>
+<table>
+<thead><tr><th>Product</th><th>Stock</th><th>Price</th><th>Expiry</th><th>Action</th></tr></thead>
+<tbody id="productTable"></tbody>
+</table>
+</div>
+
+<!-- PUHUNAN & TUBO -->
+<div class="card">
+<h2>💰 Puhunan & Tubo (Internal Only)</h2>
+<div class="grid">
+<div class="stat"><b id="invCost">₱0</b><small>Inventory Cost</small></div>
+<div class="stat"><b id="potentialSales">₱0</b><small>Potential Sales</small></div>
+<div class="stat"><b id="potentialProfit">₱0</b><small>Potential Profit</small></div>
+</div>
+<table style="margin-top:12px;">
+<thead><tr><th>Product</th><th>Cost</th><th>Price</th><th>Profit</th><th>Margin</th></tr></thead>
+<tbody id="profitTable"></tbody>
+</table>
+</div>
+
+<!-- REPORTS -->
+<div class="card">
+<h2>📈 Reports</h2>
+<div class="grid">
+<div class="stat"><b id="repToday">₱0</b><small>Today</small></div>
+<div class="stat"><b id="repWeek">₱0</b><small>This Week</small></div>
+<div class="stat"><b id="repMonth">₱0</b><small>This Month</small></div>
+</div>
+<div style="margin-top:12px;">
+<b>Sales Last 7 Days</b>
+<div id="sales7" style="font-size:13px;color:#555;margin-top:6px;">Wala pa benta</div>
+</div>
+</div>
+
+<!-- SETTINGS -->
+<div class="card">
+<h2>⚙️ Settings + Printer</h2>
+<h3>🖨️ Bluetooth Thermal Printer (58mm/80mm)</h3>
+<p style="font-size:13px;color:#666;">XPrinter, Zjiang, Epson, etc</p>
+<button class="btn btn-outline" onclick="alert('I-connect mo printer via Bluetooth sa phone mo muna')">Connect Printer</button>
+<p style="margin-top:15px;font-size:12px;color:#999;">Orenzo ERP v4.3 | Shopee Sync via CSV | No Partner ID needed | GitHub: salva1510/inventory-orenzo</p>
+</div>
+
+<script>
+// DATA STORAGE
+let products = JSON.parse(localStorage.getItem('orenz_products')||'[]');
+let sales = JSON.parse(localStorage.getItem('orenz_sales')||'[]');
+let cart = [];
+
+function save(){ 
+  localStorage.setItem('orenz_products', JSON.stringify(products));
+  localStorage.setItem('orenz_sales', JSON.stringify(sales));
+  render();
+}
+
+function addSampleProducts(){
+  if(products.length>0 && !confirm("May products ka na. Add sample pa rin?")) return;
+  products = [
+    {id:1,name:"Jersey Full Cream Milk 1L",stock:50,cost:85,price:110,expiry:"2026-12-01"},
+    {id:2,name:"Kewpie Roasted Dressing 210ml",stock:30,cost:95,price:168,expiry:"2026-10-15"},
+    {id:3,name:"Orenzo Cheese Original",stock:100,cost:120,price:195,expiry:"2026-09-20"},
+    {id:4,name:"12 Pack Jersey Milk - Rich",stock:15,cost:1051,price:1380,expiry:"2027-01-10"}
+  ];
+  save();
+}
+
+function render(){
+  // Dashboard
+  document.getElementById('totalProducts').textContent = products.length;
+  document.getElementById('lowStock').textContent = products.filter(p=>p.stock<=10).length;
+  document.getElementById('expiringSoon').textContent = products.filter(p=>{
+    let d = new Date(p.expiry); let diff = (d - new Date())/86400000; return diff<=30 && diff>=0;
+  }).length;
+  let today = new Date().toDateString();
+  let todaySalesArr = sales.filter(s=>new Date(s.date).toDateString()===today);
+  let todayTotal = todaySalesArr.reduce((a,b)=>a+b.total,0);
+  document.getElementById('todaySales').textContent = "₱"+todayTotal.toLocaleString();
+  document.getElementById('todayOrders').textContent = todaySalesArr.length;
+
+  // Product table
+  let pt = document.getElementById('productTable'); pt.innerHTML='';
+  let ps = document.getElementById('productSelect'); ps.innerHTML='<option value="">Pili Product</option>';
+  let profitT = document.getElementById('profitTable'); profitT.innerHTML='';
+  let invCost=0,potSales=0;
+  products.forEach(p=>{
+    pt.innerHTML+=`<tr><td>${p.name}</td><td style="${p.stock<=10?'color:red;font-weight:bold':''}">${p.stock}</td><td>₱${p.price}</td><td>${p.expiry}</td><td><button onclick="delProduct(${p.id})" style="color:red;border:none;background:none;cursor:pointer;">Del</button></td></tr>`;
+    ps.innerHTML+=`<option value="${p.id}">${p.name} - ${p.stock} pcs - ₱${p.price}</option>`;
+    let profit = p.price - p.cost; let margin = p.cost?((profit/p.cost)*100).toFixed(1):0;
+    profitT.innerHTML+=`<tr><td>${p.name}</td><td>₱${p.cost}</td><td>₱${p.price}</td><td>₱${profit}</td><td>${margin}%</td></tr>`;
+    invCost+=p.cost*p.stock; potSales+=p.price*p.stock;
+  });
+  document.getElementById('invCost').textContent="₱"+invCost.toLocaleString();
+  document.getElementById('potentialSales').textContent="₱"+potSales.toLocaleString();
+  document.getElementById('potentialProfit').textContent="₱"+(potSales-invCost).toLocaleString();
+
+  // Reports
+  document.getElementById('repToday').textContent="₱"+todayTotal.toLocaleString();
+  // week/month simple
+  let weekTotal = sales.filter(s=>{
+    let d=new Date(s.date); let now=new Date(); return (now-d)/86400000<=7;
+  }).reduce((a,b)=>a+b.total,0);
+  let monthTotal = sales.filter(s=>new Date(s.date).getMonth()===new Date().getMonth()).reduce((a,b)=>a+b.total,0);
+  document.getElementById('repWeek').textContent="₱"+weekTotal.toLocaleString();
+  document.getElementById('repMonth').textContent="₱"+monthTotal.toLocaleString();
+  
+  // cart
+  let cl = document.getElementById('cartList'); cl.innerHTML='';
+  let total=0;
+  cart.forEach((c,i)=>{
+    total+=c.price*c.qty;
+    cl.innerHTML+=`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #eee;"><span>${c.name} x ${c.qty}</span><span>₱${c.price*c.qty} <button onclick="cart.splice(${i},1);render()" style="color:red;border:none;background:none;">x</button></span></div>`;
+  });
+  document.getElementById('cartTotal').textContent="₱"+total;
+}
+
+function addToCart(){
+  let id = parseInt(document.getElementById('productSelect').value);
+  let qty = parseInt(document.getElementById('qtyInput').value)||1;
+  let p = products.find(x=>x.id===id);
+  if(!p) return alert("Pili ka muna product");
+  if(p.stock<qty) return alert("Kulang stock! Meron lang "+p.stock);
+  cart.push({id:p.id,name:p.name,price:p.price,qty});
+  render();
+}
+
+function checkout(){
+  if(cart.length===0) return alert("Wala laman cart");
+  let total = cart.reduce((a,b)=>a+b.price*b.qty,0);
+  cart.forEach(c=>{
+    let p = products.find(x=>x.id===c.id);
+    if(p) p.stock -= c.qty;
+  });
+  sales.push({date:new Date().toISOString(),items:[...cart],total,source:"POS"});
+  cart=[];
+  save();
+  alert("Benta success! Total ₱"+total);
+}
+
+function delProduct(id){
+  if(!confirm("Delete?")) return;
+  products = products.filter(p=>p.id!==id);
+  save();
+}
+
+// SHOPEE CSV IMPORT - CORE FEATURE
+function importShopeeCSV(){
+  const fileInput = document.getElementById('shopeeFile');
+  if(!fileInput.files[0]) return alert("Pili ka muna ng CSV galing Shopee Seller Centre > My Orders > Export");
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const text = e.target.result;
+    const lines = text.split("\n").filter(l=>l.trim()!=="");
+    if(lines.length<2) return alert("Mukhang mali file. Dapat CSV galing Shopee.");
+    
+    // Try parse header
+    const header = lines[0].toLowerCase();
+    let imported = 0;
+    let previewHTML = "<table><tr><th>Order ID</th><th>Product</th><th>Qty</th><th>Amount</th></tr>";
+    
+    // Shopee PH export formats vary: Order ID, Product Name, Quantity, etc.
+    for(let i=1;i<lines.length && i<=50;i++){
+      let cols = lines[i].split(/,|\t/);
+      // Simple heuristic: find product name and qty
+      // We assume column 1=order id, column 2=product, column maybe qty
+      let orderId = cols[0]||"";
+      let prodName = cols[1]||cols[2]||"Unknown";
+      let qty = parseInt(cols[3]||cols[4]||"1")||1;
+      let amount = cols[5]||"";
+      
+      // Auto-deduct from inventory if product matches
+      let matched = products.find(p=> prodName.toLowerCase().includes(p.name.toLowerCase().split(" ")[0]) || p.name.toLowerCase().includes(prodName.toLowerCase().split(" ")[0]));
+      if(matched){
+        if(matched.stock>=qty) matched.stock -= qty;
+      }
+      
+      previewHTML+=`<tr><td>${orderId.substring(0,12)}</td><td>${prodName.substring(0,30)}</td><td>${qty}</td><td>${amount}</td></tr>`;
+      imported++;
+    }
+    previewHTML+="</table>";
+    
+    document.getElementById('shopeePreview').style.display='block';
+    document.getElementById('shopeePreview').innerHTML = `<b>${imported} Shopee Orders na-detect (showing first 50):</b><br><br>`+previewHTML+`<br><p style="color:green;font-weight:bold;">✓ Stock auto-bawas na! Check mo Products table.</p>`;
+    document.getElementById('importedCount').textContent = imported;
+    document.getElementById('lastSync').textContent = new Date().toLocaleString();
+    
+    // Save sale as Shopee source
+    sales.push({date:new Date().toISOString(),items:[{name:"Shopee Bulk Import "+imported+" orders",price:0,qty:1}],total:0,source:"Shopee",count:imported});
+    save();
+  };
+  reader.readAsText(file);
+}
+
+// Init
+render();
+if(products.length===0) addSampleProducts();
+</script>
+
+</body>
+</html>
